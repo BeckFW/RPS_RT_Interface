@@ -4,12 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1", 
+    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node --env-file=.env.local main.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.6.8"
+    "axios": "^1.6.8",
+    "sharp": "^0.33.3"
   }
 }
