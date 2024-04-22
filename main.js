@@ -155,21 +155,58 @@ const calculateResult = (playerMove, npcMove) => {
         };
         
     return axios.request(config)
+const playWelcomeSequence = async () => {
+    const options = new RT_API_Sequence_Request(SEQUENCE_PREFIX + "play", 0, null, false);
+
+    axios.request(options)
     .then((response) => {
-        console.log("success");
-        return response.data.result; 
+        console.log("Welcome sequence played!");
     })
     .catch((error) => {
-        console.log("error");
-   
+        console.error("Error playing welcome sequence");
+        console.log(error);
+    });
+}
+const playHelloSequence = async () => {
+    const options = new RT_API_Sequence_Request(SEQUENCE_PREFIX + "welcome", 0, null, false);
+
+    axios.request(options)
+    .then((response) => {
+        console.log("Hello sequence played!");
+    })
+    .catch((error) => {
+        console.error("Error playing hello sequence");
+        console.log(error);
     });
 }
 
 // Play result sequence
 const playMoveSequence = async (move) => {
+    const options = new RT_API_Sequence_Request(SEQUENCE_PREFIX + "move_" + move.trim(), 0, null, false);
+
+    axios.request(options)
+    .then((response) => {
+        console.log("Move sequence played!");
+    }) 
+    .catch((error) => {
+        console.error("Error playing move sequence");
+        console.log(error);
+    });
+
 }
 // Play scores sequence/CF
-const playScoresSequence = async () => {
+const playWinLossSequence = async (robotWinState) => {
+    // robotWinState = "win" | "loss" | "draw". From RT's perspective
+    const options = new RT_API_Sequence_Request(SEQUENCE_PREFIX + "robo_" + robotWinState.trim(), 0, null, false);
+
+    axios.request(options)
+    .then((response) => {
+        console.log("Win/Loss sequence played!");
+    })
+    .catch((error) => {
+        console.error("Error playing win/loss sequence");
+        console.log(error);
+    });
 }
 
 // Wait for x seconds for sequences to finish
