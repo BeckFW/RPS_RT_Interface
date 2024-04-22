@@ -25,7 +25,7 @@ class RT_API_Sequence_Request {
         this.method = 'put';
         this.url = RT_API + `/sequence_player/play/${sequenceName}`;
         this.headers = {
-            'tritium-auth-token': RT_API_KEY
+            'X-Tritium-Auth-Token': RT_API_KEY
         }; 
         this.body = {
             "offset_seconds": offset || 0, 
