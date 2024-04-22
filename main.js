@@ -43,7 +43,13 @@ const welcomeMessage = () => {
 
 const startGame = () => {
     gameRunning = true;
+    playerScore = 0;
+    npcScore = 0;
 }
+
+const endGame = () => {
+    gameRunning = false;
+}  
 
 
 // Play countdown sequence
@@ -92,36 +98,36 @@ const captureImage = () => {
 // Determine move
 const checkGesture = async (imageBuffer) => {
     return new Promise((resolve, reject) => {
-    // config object for axios request
-    let config = {
-        method: 'post',
-        maxBodyLength: Infinity,
+        // config object for axios request
+        let config = {
+            method: 'post',
+            maxBodyLength: Infinity,
             url: RPS_API + '/gestures/recognise',
-        headers: { 
-            'Content-Type': 'image/png',
+            headers: { 
+                'Content-Type': 'image/png',
                 'api-key': RPS_API_KEY,
-        },
-        data: imageBuffer
-        };
+            },
+            data: imageBuffer
+            };
 
-    axios.request(config)
-    .then((response) => {
+        axios.request(config)
+        .then((response) => {
             if (response.data.trim() !== "none" || response.data !== " \\n" || response.data !== null) {
                 console.log(`Image Processed - Gesture found: ${response.data}`); 
                 //console.log(response);
                 //speak("You made a " + response.data + " gesture.");
                 resolve(response.data);
             } else throw {response: {status: 404}};
-    })
-    .catch((error) => {
-        console.error("Error!");
+        })
+        .catch((error) => {
+            console.error("Error!");
             if (error.response?.status === 500 || error.response?.status === 404) {
                 //speak("Sorry, I was unable to find a gesture.");
                 reject("500: Internal Server Error");
             } else {
                 reject(error);
-        } 
-        //console.log(error.message)
+            }
+            //console.log(error.message)
         });
     });
 }
@@ -165,10 +171,7 @@ const speak = async (text) => {
         },
         data: text
     }
-    
-    console.log("Speaking: " + text);
 
-    /*
     axios.request(config)
     .then((response) => {
         console.log(`SPEAKING: ${text}`);
@@ -178,23 +181,21 @@ const speak = async (text) => {
         console.log(error);
         //console.log(error.response.statusText); 
     });
-    */
-
 }
 
 // Determine result
 const calculateResult = (playerMove, npcMove) => {
     return new Promise((resolve, reject) => {
-    let config = {
-        method: 'get',
+        let config = {
+            method: 'get',
             url: RPS_API + `/moves/result/${playerMove.trim()}/${npcMove}`,
-        headers: { 
+            headers: { 
                 'api-key': RPS_API_KEY,
-        },
+            },
         };
-        
+            
         console.log(`Result calculations: ${playerMove.trim()} vs ${npcMove}`);
-    return axios.request(config)
+        return axios.request(config)
         .then((response) => {
             resolve(response.data.result); 
         })
@@ -218,6 +219,7 @@ const playWelcomeSequence = async () => {
         console.log(error);
     });
 }
+
 const playHelloSequence = async () => {
     const options = new RT_API_Sequence_Request(SEQUENCE_PREFIX + "welcome", 0, null, false);
 
@@ -265,6 +267,26 @@ const waitForSequence = async (duration) => {
     return new Promise(resolve => setTimeout(resolve, duration * 1000));
 }
 
+const testCountdown = async () => {
+    return new Promise(async (resolve) => {
+        for(let i = 0; i <= 3; i++) {
+            switch(i) {
+                case 1:
+                    speak("Rock!");
+                    break;
+                case 2:
+                    speak("Paper!");
+                    break;
+                case 3:
+                    speak("Scissors!");
+                    break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 1500)); // wait for 1 second
+        }
+        resolve();
+    });
+}
+
 const test = async () => {
     // Countdown from 5
     for(let i = 3; i > 0; i--) {
@@ -282,6 +304,7 @@ const test = async () => {
         console.log(err);
     });
 }
+
 // ---------------- //
 // ----- Main ----- // 
 // ---------------- //
@@ -296,34 +319,34 @@ playHelloSequence();
 
 process.stdin.on('data', async () => {
 if (!gameRunning) {
-        startGame(); 
+    startGame();
     gameRunning = true;
 } else { 
     while (playerScore < 2 && npcScore < 2) {
         try {
             // To hold moves
-    let npcMove, playerMove;
-    // Generate a random NPC move
-    npcMove = await generateMove();
+            let npcMove, playerMove;
+            // Generate a random NPC move
+            npcMove = await generateMove();
 
             // Play countdown on RT
             playWelcomeSequence();
-    // Wait for sequence to finish playing
+            // Wait for sequence to finish playing
             await waitForSequence(6); 
 
             // Play RT's move
             playMoveSequence(npcMove);
             waitForSequence(2);
 
-    // Capture image from RT camera
-    await captureImage()
-    .then(async (image) => {
-        fs.writeFileSync('test.png', image);
-        exec('open test.png'); 
-        playerMove = await checkGesture(image);
-    })
-    
-    // Determine move and response
+            // Capture image from RT camera
+            await captureImage()
+            .then(async (image) => {
+                fs.writeFileSync('test.png', image);
+                exec('open test.png'); 
+                playerMove = await checkGesture(image);
+            })
+
+            // Determine move and response
             const result = await calculateResult(playerMove, npcMove)
             
             console.log("Waiting for sequence to finish...");
@@ -333,24 +356,24 @@ if (!gameRunning) {
             // Play result sequence
             console.log(`Result: ${result}`);
             switch(result.toLowerCase()) {
-        case "win":
-            playerScore++;
+                case "win":
+                    playerScore++;
                     playWinLossSequence("loss");
-            break;
+                    break;
                 case "loss":
-            npcScore++;
+                    npcScore++;
                     playWinLossSequence("win");
-            break;
-        case "draw":
+                    break;
+                case "draw":
                     speak(`I played ${npcMove}. It's a draw!`);
-            break;
-    }
+                    break;
+            }
 
             await waitForSequence(3); 
             speak(`The score is ${playerScore}, ${npcScore}.`);
             waitForSequence(2);
             speak("Next round!");
-    await waitForSequence(5);
+            await waitForSequence(5);
 
 
         } catch (error) {
