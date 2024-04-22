@@ -9,6 +9,7 @@ const RT_API = process.env.RT_API_URL;
 const RT_API_KEY = process.env.RT_API_KEY;
 const RPS_API = process.env.RPS_API_URL;
 const RPS_API_KEY = process.env.RPS_API_KEY;
+const SEQUENCE_PREFIX = "beck_rps_";
 
 
 let gameRunning = false; 
@@ -235,29 +236,34 @@ const test = async () => {
 // ----- Main ----- // 
 // ---------------- //
 
-speak("Hello, welcome to Rock, Paper, Scissors!");
-speak("Press ENTER on the keyboard to start the game."); 
 
-process.stdin.on('keypress', function (ch, key) {
-    if (key && key.name == 'enter') {
+//speak("Hello, welcome to Rock, Paper, Scissors!");
+//speak("Press ENTER on the keyboard to start the game."); 
+//speak("Hello, welcome to Rock, Paper, Scissors!");
+//speak("Press ENTER on the keyboard to start the game.");
+
+playHelloSequence();
+
+process.stdin.on('data', async () => {
+if (!gameRunning) {
         startGame(); 
-    }
-});
-
-while (gameRunning) { 
-    // Play countdown on RT
-    speak("Let's play."); 
-
+    gameRunning = true;
+} else { 
+    while (playerScore < 2 && npcScore < 2) {
+        try {
+            // To hold moves
     let npcMove, playerMove;
-
-    // Play countdown sequence on RT
-    playCountdownSequence();
-
     // Generate a random NPC move
     npcMove = await generateMove();
 
+            // Play countdown on RT
+            playWelcomeSequence();
     // Wait for sequence to finish playing
-    await waitForSequence(5); 
+            await waitForSequence(6); 
+
+            // Play RT's move
+            playMoveSequence(npcMove);
+            waitForSequence(2);
 
     // Capture image from RT camera
     await captureImage()
@@ -267,33 +273,48 @@ while (gameRunning) {
         playerMove = await checkGesture(image);
     })
     
-    playMoveSequence(npcMove)
-    
     // Determine move and response
-    const result = calculateResult(playerMove, npcMove);
+            const result = await calculateResult(playerMove, npcMove)
+            
+            console.log("Waiting for sequence to finish...");
+            await waitForSequence(1); 
+            console.log("Waited."); 
 
-    switch(result) {
+            // Play result sequence
+            console.log(`Result: ${result}`);
+            switch(result.toLowerCase()) {
         case "win":
             playerScore++;
-            speak("You win!");
+                    playWinLossSequence("loss");
             break;
-        case "lose":
+                case "loss":
             npcScore++;
-            speak("You lose!");
+                    playWinLossSequence("win");
             break;
         case "draw":
-            speak("It's a draw!");
+                    speak(`I played ${npcMove}. It's a draw!`);
             break;
     }
 
-    /*
+            await waitForSequence(3); 
+            speak(`The score is ${playerScore}, ${npcScore}.`);
+            waitForSequence(2);
+            speak("Next round!");
     await waitForSequence(5);
 
+
+        } catch (error) {
+            console.log(error?.code); 
+            speak("Something went wrong. Let's try again.");
+            await waitForSequence(5);
+        }
+    }
+   
+
+    
+    //await waitForSequence(5);
+
     // Play scores sequence on RT
-    playScoresSequence();
-    */
+    //playScoresSequence();
 }
-
-
-
-
+});
