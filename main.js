@@ -70,6 +70,8 @@ const captureImage = () => {
             // Convert response to png
             sharp(response.data)
                     .toFormat('png')
+                    .toColourspace('srgb')
+                    .ensureAlpha()
                     .toBuffer()
                     .then((pngBuffer) => {
                         // Resolve with the PNG buffer
