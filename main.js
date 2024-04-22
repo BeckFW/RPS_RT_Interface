@@ -116,6 +116,33 @@ const checkGesture = async (imageBuffer) => {
         //console.log(error.message)
     });
 
+const generateMove = async () => {
+    return new Promise((resolve, reject) => {
+        let config = {
+            method: 'get',
+            maxBodyLength: Infinity,
+            url: RPS_API + '/moves/generate',
+            headers: { 
+                'api-key': RPS_API_KEY,
+            }
+            };
+
+        axios.request(config)
+        .then((response) => {
+            console.log(`NPC Move ${response.data.move} generated`);
+            resolve(response.data.move);
+        })  
+        .catch((error) => {
+            console.error("Error!");
+            if (error.response?.status === 500) {
+                //speak("Sorry, I was unable to find a gesture.");
+                console.log(error.response);
+                reject("500: Internal Server Error");
+            } else {
+                reject(error); 
+            }
+        });
+    });
 }
 
 const speak = async (text) => {
