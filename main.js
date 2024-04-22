@@ -89,32 +89,40 @@ const captureImage = () => {
 
 // Determine move
 const checkGesture = async (imageBuffer) => {
+    return new Promise((resolve, reject) => {
     // config object for axios request
     let config = {
         method: 'post',
         maxBodyLength: Infinity,
-        url: process.env.RPS_API_URL + '/gestures/recognise',
+            url: RPS_API + '/gestures/recognise',
         headers: { 
             'Content-Type': 'image/png',
-            'api-key': process.env.RPS_API_KEY,
+                'api-key': RPS_API_KEY,
         },
         data: imageBuffer
         };
 
     axios.request(config)
     .then((response) => {
-        console.log("Image processed!"); 
-        speak("You made a " + response.data + " gesture.");
-        console.log(response.data);
+            if (response.data.trim() !== "none" || response.data !== " \\n" || response.data !== null) {
+                console.log(`Image Processed - Gesture found: ${response.data}`); 
+                //console.log(response);
+                //speak("You made a " + response.data + " gesture.");
+                resolve(response.data);
+            } else throw {response: {status: 404}};
     })
     .catch((error) => {
         console.error("Error!");
-        if (error.response.status === 500) {
-            speak("Sorry, I was unable to find a gesture.");
-            console.log("500: Internal Server Error");
+            if (error.response?.status === 500 || error.response?.status === 404) {
+                //speak("Sorry, I was unable to find a gesture.");
+                reject("500: Internal Server Error");
+            } else {
+                reject(error);
         } 
         //console.log(error.message)
+        });
     });
+}
 
 const generateMove = async () => {
     return new Promise((resolve, reject) => {
@@ -161,7 +169,7 @@ const speak = async (text) => {
     /*
     axios.request(config)
     .then((response) => {
-        //console.log(text);
+        console.log(`SPEAKING: ${text}`);
     })
     .catch((error) => {
         console.error("TTS Error");
@@ -174,15 +182,28 @@ const speak = async (text) => {
 
 // Determine result
 const calculateResult = (playerMove, npcMove) => {
+    return new Promise((resolve, reject) => {
     let config = {
         method: 'get',
-        url: process.env.API_URL + `/moves/respond?playerMove=${playerMove}&npcMove=${npcMove}`,
+            url: RPS_API + `/moves/result/${playerMove.trim()}/${npcMove}`,
         headers: { 
-            'api-key': process.env.API_KEY,
+                'api-key': RPS_API_KEY,
         },
         };
         
+        console.log(`Result calculations: ${playerMove.trim()} vs ${npcMove}`);
     return axios.request(config)
+        .then((response) => {
+            resolve(response.data.result); 
+        })
+        .catch((error) => {
+            //console.log(error);
+            reject(error);
+    
+        });
+    });
+}
+
 const playWelcomeSequence = async () => {
     const options = new RT_API_Sequence_Request(SEQUENCE_PREFIX + "play", 0, null, false);
 
@@ -253,7 +274,7 @@ const test = async () => {
     .then((image) => {
         fs.writeFileSync('test.png', image);
         exec('open test.png'); 
-        //checkGesture(image);
+        checkGesture(image);
     })
     .catch((err) => {
         console.log(err);
